@@ -33,17 +33,15 @@ export const options: Options = {
             exec: 'createChannels',
             executor: 'shared-iterations',
             vus: 1,
-            iterations: 10,
-            startTime: '10s',
-            maxDuration: '20s'
+            iterations: 100,
+            startTime: '10s'
         },
         createVideos: {
             exec: 'createVideosNoPurchase',
             executor: 'shared-iterations',
             vus: 1,
-            iterations: 10,
-            startTime: '10s',
-            maxDuration: '20s'
+            iterations: 900,
+            startTime: '10s'
         }
 
     },
@@ -58,8 +56,8 @@ export const options: Options = {
 
 //let ids: { [x: string]: any; } = {};
 const params: { [login: string]: any } = {};
-const API_URL: string = 'http://eksweb.telebreeze.com';
-const API_KEY: string = 'aea3c531-f949-400c-a670-9c999187bfd5';
+const API_URL: string = 'http://aibaweb.telebreeze.com/';
+const API_KEY: string = '20391d42-205b-424c-a922-c49d6d89343f';
 const OPERATOR_ID = '1fb1b4c7-dbd9-469e-88a2-c207dc195869';
 //let ids: { [x: string]: any; } = {};
 

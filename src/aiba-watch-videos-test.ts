@@ -50,6 +50,27 @@ export const options: Options = {
             duration: '900s',
             preAllocatedVUs: 100, // how large the initial pool of VUs would be
             maxVUs: 3000, // if the preAllocatedVUs are not enough, we can initialize more
+        },
+
+        watch2: {
+            exec: 'watch2',
+            startTime: '1060s',
+            executor: 'constant-arrival-rate',
+            rate: 250,
+            timeUnit: '1s', // 1000 iterations per second, i.e. 1000 RPS
+            duration: '900s',
+            preAllocatedVUs: 100, // how large the initial pool of VUs would be
+            maxVUs: 3000, // if the preAllocatedVUs are not enough, we can initialize more
+        },
+        watch3: {
+            exec: 'watch3',
+            startTime: '1120s',
+            executor: 'constant-arrival-rate',
+            rate: 250,
+            timeUnit: '1s', // 1000 iterations per second, i.e. 1000 RPS
+            duration: '900s',
+            preAllocatedVUs: 100, // how large the initial pool of VUs would be
+            maxVUs: 3000, // if the preAllocatedVUs are not enough, we can initialize more
         }
 
     },
@@ -167,6 +188,9 @@ export async function watchAuth()  {
         'watch position update' : (res) => res.json('code') === 1
     });
 
+    await redisClient.set('mediaId', channelID);
+    await redisClient.set('streamId', streamID);
+
     //await redisClient.set('player-coockie', stream.cookies);
 
     //stats
@@ -279,4 +303,70 @@ export async function login() {
     );
     let token = login.json('content.token.access_token');
     await redisClient.set(username, token);
+}
+
+export async function watch2() {
+    const username = execution.scenario.iterationInTest + "username";
+
+    const mediaId = await redisClient.get('mediaId');
+    const streamId = await redisClient.get('streamId');
+
+    // watch position
+    const watchpostion = await http.asyncRequest("POST",
+        `${API_URL}/api/player/watch-position`,
+        JSON.stringify({
+            contentId: mediaId,
+            streamId: streamId,
+            duration: 100,
+            position: 50,
+            device_id: 'asdfasdfasdf',
+            os: 'linux',
+            platform: 'web',
+            language: 'en',
+            density: 1
+
+        }),
+        {
+            headers: {
+                'Content-Type':  'application/json',
+                Authorization: `Bearer ${await getUserToken(username)}`,
+            },
+        });
+    check(watchpostion, {
+        'watch 2 position update' : (res) => res.json('code') === 1
+    });
+
+}
+
+export async function watch3() {
+    const username = execution.scenario.iterationInTest + "username";
+
+    const mediaId = await redisClient.get('mediaId');
+    const streamId = await redisClient.get('streamId');
+
+    // watch position
+    const watchpostion = await http.asyncRequest("POST",
+        `${API_URL}/api/player/watch-position`,
+        JSON.stringify({
+            contentId: mediaId,
+            streamId: streamId,
+            duration: 100,
+            position: 50,
+            device_id: 'asdfasdfasdf',
+            os: 'linux',
+            platform: 'web',
+            language: 'en',
+            density: 1
+
+        }),
+        {
+            headers: {
+                'Content-Type':  'application/json',
+                Authorization: `Bearer ${await getUserToken(username)}`,
+            },
+        });
+    check(watchpostion, {
+        'watch 3 position update' : (res) => res.json('code') === 1
+    });
+
 }
