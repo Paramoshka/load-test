@@ -24,9 +24,9 @@ export const options: Options = {
         apitest: {
             exec: 'apitest',
             executor: 'constant-arrival-rate',
-            rate: 500,
+            rate: 333,
             timeUnit: '1s', // 1000 iterations per second, i.e. 1000 RPS
-            duration: '900s',
+            duration: '1800s',
             preAllocatedVUs: 100, // how large the initial pool of VUs would be
             maxVUs: 500, // if the preAllocatedVUs are not enough, we can initialize more
         },
@@ -67,7 +67,10 @@ function getParams(username: string, email: string) {
             "testMode": true
         }
     );
-    console.log(registration.body);
+
+    if (!registration.json('content.user_id')) {
+        console.log(registration.body);
+    }
 
     return params[`${username}`] = {
         "userId" : `${registration.json('content.user_id')}`,
@@ -82,17 +85,26 @@ export function apitest() {
     // const username = 'tushkan' + execution.vu.idInTest
     // const email = `parfenov${execution.vu.idInTest}@mail.ru`
    // const username = uuidv4();
-    const username = execution.scenario.iterationInTest + "username";
+    const username = execution.scenario.iterationInTest + "_12username";
     const email = uuidv4() + "@mail.ru";
     //console.log(email);
     //confirm email
+    const params = getParams(username, email);
+
     const confirm = http.post(
         `${URL_AUTHORIZATION}/activate-profile`,
-        getParams(username, email)
+        params
     );
-    console.log(confirm.body);
+    //console.log(confirm.body);
     check(confirm, {
-        'profile is activated': (res) => res.json('code') === 1,
+        'profile is activated': (res) => {
+            const result = res.json('code') === 1
+            if (!result) {
+                console.log('error', res.json('code'), params)
+            }
+
+            return result;
+        },
     });
     // console.log(confirm.request)
     // console.log(confirm.body)
