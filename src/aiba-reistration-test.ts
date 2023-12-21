@@ -10,7 +10,8 @@ import execution from "k6/execution";
 
 
 //vars
-const URL_AUTHORIZATION = 'http://eksweb.telebreeze.com/api/authorization';
+//const URL_AUTHORIZATION = 'http://eksweb.telebreeze.com/api/authorization';
+const URL_AUTHORIZATION = 'https://127-80.dev.telebreeze.com/api/authorization';
 const PROJECT_ID = 3621321;
 
 export const CounterErrors = new Counter('Errors');
@@ -50,7 +51,7 @@ function getParams(username: string, email: string) {
 
     const registration = http.post(
         `${URL_AUTHORIZATION}/register`,
-        JSON.stringify({
+       {
             "language": `en`,
             "operator_id": `${ids['operatorId']}`,
             "device_id": `176C93F7BF7F08A3A188BF678865FEA3`,
@@ -64,17 +65,18 @@ function getParams(username: string, email: string) {
             "password": `1111`,
             "repeatPassword": `1111`,
             "testMode": true
-        })
+        }
     );
+    console.log(registration.body);
 
-    return params[`${username}`] = JSON.stringify({
+    return params[`${username}`] = {
         "userId" : `${registration.json('content.user_id')}`,
         "emailVerificationToken": `${registration.json('content.emailVerificationToken')}`,
         "device_id": `1`,
         "platform": `mobile`,
         "os": `browser`,
         "testMode": true
-    });
+    };
 }
 export function apitest() {
     // const username = 'tushkan' + execution.vu.idInTest
@@ -88,6 +90,7 @@ export function apitest() {
         `${URL_AUTHORIZATION}/activate-profile`,
         getParams(username, email)
     );
+    console.log(confirm.body);
     check(confirm, {
         'profile is activated': (res) => res.json('code') === 1,
     });

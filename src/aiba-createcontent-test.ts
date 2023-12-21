@@ -256,7 +256,7 @@ export async function createChannels() {
         JSON.stringify({
             "published": true,
             "availableWithoutPurchase": random_boolean,
-            "showToDemoUsers": false,
+            "showToDemoUsers": random_boolean,
             "title": "DemoNewNEW",
             "props": {
                 "keyCode": "",
@@ -323,7 +323,7 @@ export async function createVideosNoPurchase() {
         JSON.stringify({
             "published": true,
             "availableWithoutPurchase": random_boolean,
-            "showToDemoUsers": false,
+            "showToDemoUsers": random_boolean,
             "title": "DemoNewNEW",
             "props": {
                 "keyCode": "",
