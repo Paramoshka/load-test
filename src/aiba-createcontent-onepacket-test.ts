@@ -1,8 +1,6 @@
 import {check, JSONArray, JSONObject, sleep} from "k6";
 import {Options} from 'k6/options';
 
-/* @ts-ignore */
-//import { randomIntBetween } from 'https://jslib.k6.io/k6-utils/1.1.0/index.js';
 import http from 'k6/http'
 import {Counter} from 'k6/metrics';
 import {uuidv4} from 'https://jslib.k6.io/k6-utils/1.4.0/index.js';
@@ -31,16 +29,17 @@ export const options: Options = {
         },
         createChannels: {
             exec: 'createChannels',
-            executor: 'shared-iterations',
+            executor: 'per-vu-iterations',
             vus: 1,
-            iterations: 10,
+            iterations: 1,
             startTime: '10s'
         },
+
         createVideos: {
-            exec: 'createVideosNoPurchase',
-            executor: 'shared-iterations',
+            exec: 'createVideos',
+            executor: 'per-vu-iterations',
             vus: 1,
-            iterations: 10,
+            iterations: 1,
             startTime: '10s'
         }
 
@@ -57,9 +56,11 @@ export const options: Options = {
 //let ids: { [x: string]: any; } = {};
 const params: { [login: string]: any } = {};
 const API_URL: string = 'http://aibaweb.telebreeze.com';
-const API_KEY: string = 'e9cccda7-a907-42ef-b28b-7a20db86b26d';
-const OPERATOR_ID = '1fb1b4c7-dbd9-469e-88a2-c207dc195869';
-const TITLE = "Ten"
+const API_KEY: string = '8078e036-f181-4dd7-a501-ed37c0ef841a';
+const COUNT_CATEGOTY_CHANNELS = 1;
+const COUNT_CATEGOTY_VIDEOS = 1;
+const CHANNELS_COUNT = 100;
+const VIDEOS_COUNT = 100;
 
 //let ids: { [x: string]: any; } = {};
 
@@ -88,63 +89,50 @@ function getToken() {
     return params['token'];
 }
 
-export function createContent() {
-
-    //console.log(params['token']);
-    sleep(1);
-    //create category
-    const createCategory = http.post(
-
+async function createCategory(type: string, title: string) {
+    const data = http.asyncRequest(
+        "POST",
         `${API_URL}/api/dashboard/categories`,
         JSON.stringify({
             "published": 'true',
             "mode": 'regular',
             "os": [],
-            "title": `${TITLE}_channel`,
+            "title": `${title}`,
             "externalId": '',
             "locales": '{}',
-            "type": 'channel'
+            "type": `${type}`
         }),
         getToken()
-    )
-    check(createCategory, {
-        'category is created': (res) => res.json('id') != undefined
-    });
-    params['categoryId'] = createCategory.json('id');
-    sleep(1);
-    //create video category
-    const createVideoCategory = http.post(
+    );
+    data.then(res => {
+        console.log(res.body);
+    })
+        .catch(err => {
+            console.log(err);
+        })
+}
 
-        `${API_URL}/api/dashboard/categories`,
-        JSON.stringify({
-            "published": 'true',
-            "mode": 'regular',
-            "os": [],
-            "title": `${TITLE}_video`,
-            "externalId": '',
-            "locales": '{}',
-            "type": 'video'
-        }),
-        getToken()
-    )
-    check(createVideoCategory, {
-        'video category is created': (res) => res.json('id') != undefined
-    });
-    //
-    const createPackage = http.post(
+async function createPackage() {
+    const createPackage = http.asyncRequest(
+        "POST",
         `${API_URL}/api/dashboard/packages`,
         JSON.stringify({
             "title": `${uuidv4()}`
         }),
         getToken()
     );
-    check(createPackage, {
-        'Package is created': (res) => res.json('id') != undefined
-    });
-    params['packageId'] = createPackage.json('id');
-    sleep(2);
-    //create plan
-    const createPlan = http.post(
+    createPackage.then(res => {
+        let packageId = res.json('id');
+        createPlan(packageId);
+    })
+        .catch(err => {
+            console.log(err)
+        })
+}
+
+async function createPlan(packageId: number | string | JSONArray | JSONObject | null | boolean) {
+    const createPlan = http.asyncRequest(
+        "POST",
         `${API_URL}/api/dashboard/plans`,
         JSON.stringify({
             "categories": [],
@@ -155,7 +143,7 @@ export function createContent() {
             "os": [],
             "maxConcurrentConnections": 0,
             "npvrLimit": 0,
-            "packageId": `${params['packageId']}`,
+            "packageId": `${packageId}`,
             "title": `${randomString(10, `aeioubcdfghijpqrstuv`)}`,
             "renewSubscriptions": true,
             "published": true,
@@ -163,13 +151,18 @@ export function createContent() {
         }),
         getToken()
     );
-    check(createPlan, {
-        'Plan is created': (res) => res.json('id') != undefined
-    });
-    params['planId'] = createPlan.json('id');
-    sleep(1);
-    //
-    const createOffers = http.post(
+    createPlan.then(res => {
+        let planId = res.json('id');
+        createOffer(planId);
+    }).catch(err => {
+        console.log(err);
+    })
+}
+
+async function createOffer(planId: number | string | JSONArray | JSONObject | null | boolean) {
+
+    const createOffers = http.asyncRequest(
+        "POST",
         `${API_URL}/api/dashboard/offers`,
         JSON.stringify({
             "url": "",
@@ -178,34 +171,36 @@ export function createContent() {
             "intervalType": "month",
             "intervalLength": '1',
             "published": 'true',
-            "planId": `${params['planId']}`
-        }),
-        getToken()
-    );
-    check(createOffers, {
-        'Offer is created': (res) => res.json('id') != undefined
-    });
-    sleep(1);
-    const createStripe = http.post(
-        `${API_URL}/api/dashboard/plugininstances`,
-        JSON.stringify({
-            "pluginId": 'd66dbb8b-53e3-4f20-91cb-dc65e6e105b2',
-            "title": "Stripe Payment System"
+            "planId": `${planId}`
         }),
         getToken()
     );
 
-    check(createStripe, {
-        'stripe is created': (res) => res.json('id') != undefined
-    });
-    //console.log(createStripe.body);
-    sleep(1);
+    createOffers.then(res => {
+        console.log(res);
+    })
+        .catch(err => {
+            console.log(err);
+        })
+}
+
+export function createContent() {
+
+    for (let i = 0; i < COUNT_CATEGOTY_CHANNELS; i++) {
+        createCategory("channel", "ChannelCategory" + i)
+    }
+
+    for (let i = 0; i < COUNT_CATEGOTY_VIDEOS; i++) {
+        createCategory("video", "VideoCategory" + i)
+    }
+
+    createPackage();
 
 }
 
-function getPackageIds() {
+async function getPackageIds() {
     if (params['packageIds'] === undefined) {
-        const getPackages = http.get(
+        const getPackages = await http.get(
             `${API_URL}/api/dashboard/packages`,
             getToken()
         )
@@ -223,9 +218,10 @@ function getPackageIds() {
     return params['packageIds'];
 }
 
-function getCategoriesIds(type: string) {
+async function getCategoriesIds(type: string) {
+
     if (params['categoryIds'] === undefined) {
-        const getPackages = http.get(
+        const getPackages = await http.get(
             `${API_URL}/api/dashboard/categories`,
             getToken()
         )
@@ -248,10 +244,8 @@ function getCategoriesIds(type: string) {
     return params['categoryIds'];
 }
 
-export async function createChannels() {
-
+async function createMediaContent(title: string, type: string, categoryId: string, packageIds: any) {
     let random_boolean = Math.random() < 0.5;
-    const title = execution.scenario.iterationInTest + TITLE;
 
     const createChannel =  http.asyncRequest(
         "POST",
@@ -273,30 +267,68 @@ export async function createChannels() {
             },
             "ageLimit": 0,
             "os": [],
-            "categories": getCategoriesIds("channel"),
-            "packages": getPackageIds(),
+            "categories": [categoryId],
+            "packages": packageIds,
             "duration": 0,
             "shared": [],
             "externalId": "",
             "contentOwnerId": null,
             "geoIpId": null,
             "locales": {},
-            "type": "channel"
+            "type": `${type}`
         }),
         getToken()
     );
 
     createChannel.then(
         res => {
-            check(res, {
-                'channel is created': (res) => res.json('id') != undefined
-            });
-            addTracks(res.json('id'), "channel");
+            let contentId = res.json('id');
+            if (contentId === undefined) {
+                console.log(res.body);
+            }
+            console.log(res.body);
+            addTracks(contentId, type);
         }
-    );
+    ).catch(err => {
+        console.log(err);
+    });
 }
 
-async function addTracks(contentId: string, type: string) {
+export async function createChannels() {
+    //channel
+    let data =  getCategoriesIds("channel");
+    let packageIds = await getPackageIds();
+    sleep(1);
+
+    data.then(res => {
+        (res as [x: string]).forEach((id, index) => {
+            for (let i = 0; i < CHANNELS_COUNT; i++) {
+                createMediaContent("channel"+ index + i, "channel", id, packageIds);
+                sleep(1);
+            }
+            sleep(1);
+        })
+    });
+}
+
+export async function createVideos() {
+    //channel
+    let data =  getCategoriesIds("video");
+    let packageIds = await getPackageIds();
+    sleep(1);
+
+    data.then(res => {
+        (res as [x: string]).forEach((id, index) => {
+            for (let i = 0; i < VIDEOS_COUNT; i++) {
+                createMediaContent("video"+ index + i, "video", id, packageIds);
+                sleep(1);
+            }
+            sleep(1);
+        })
+    });
+}
+
+async function addTracks(contentId: number | string | JSONArray | JSONObject | null | boolean, type: string) {
     const track = http.post(
         `${API_URL}/api/dashboard/tracks`,
         JSON.stringify({
@@ -314,51 +346,4 @@ async function addTracks(contentId: string, type: string) {
     check(track, {
         'track added': (res) => res.json('id') != undefined
     });
-}
-
-export async function createVideosNoPurchase() {
-
-    let random_boolean = Math.random() < 0.5;
-    const title = execution.scenario.iterationInTest + TITLE;
-    const createVideo = http.asyncRequest(
-        "POST",
-        `${API_URL}/api/dashboard/contents`,
-        JSON.stringify({
-            "published": true,
-            "availableWithoutPurchase": random_boolean,
-            "showToDemoUsers": random_boolean,
-                "title": `${title}`,
-            "props": {
-                "keyCode": "",
-                "epg": {
-                    "url": "",
-                    "id": "",
-                    "timeShift": "",
-                    "duration": 86400,
-                    "pluginInstanceId": null
-                }
-            },
-            "ageLimit": 0,
-            "os": [],
-            "categories": getCategoriesIds("video"),
-            "packages": getPackageIds(),
-            "duration": 0,
-            "shared": [],
-            "externalId": "",
-            "contentOwnerId": null,
-            "geoIpId": null,
-            "locales": {},
-            "type": "video"
-        }),
-        getToken()
-    );
-    createVideo.then(
-        res => {
-            check(res, {
-                'video is created': (res) => res.json('id') != undefined
-            });
-            addTracks(res.json('id'), "video");
-        }
-    );
-
 }
